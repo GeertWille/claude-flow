@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let Database = null;
-let sqliteAvailable = false;
+let sqliteAvailable = null; // Changed from false to null to allow re-checking
 let loadError = null;
 
 /**
@@ -24,14 +24,25 @@ async function tryLoadSQLite() {
     Database = require('better-sqlite3');
     sqliteAvailable = true;
     return true;
+
+    const require = createRequire(import.meta.url);
+    Database = require('better-sqlite3');
+    sqliteAvailable = true;
+    return Promise.resolve(true);
   } catch (requireErr) {
     // Fallback to ES module import
     try {
-      const module = await import('better-sqlite3');
-      Database = module.default;
-      sqliteAvailable = true;
-      return true;
-    } catch (importErr) {
+      const module = import('better-sqlite3');
+      return module.then(m => {
+        Database = m.default;
+        sqliteAvailable = true;
+        return true;
+      }).catch(err => {
+        loadError = err;
+        sqliteAvailable = false;
+        return false;
+      });
+    } catch (err) {
       loadError = importErr;
       
       // Check for specific Windows errors
