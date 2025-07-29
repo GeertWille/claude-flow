@@ -313,7 +313,7 @@ const hiveMindWizard = safeInteractive(
       if (flags[camelCase] !== undefined) return flags[camelCase];
       return defaultValue;
     };
-    
+
     const config = {
       name: flags.name || `swarm-${Date.now()}`,
       queenType: getFlag('queenType', 'queen-type', 'strategic'),
@@ -454,7 +454,11 @@ async function spawnSwarm(args, flags) {
   const validQueenTypes = ['strategic', 'tactical', 'adaptive'];
   const queenType = flags.queenType || flags['queen-type'] || 'strategic';
   if (!validQueenTypes.includes(queenType)) {
-    console.error(chalk.red(`Error: Invalid queen type '${queenType}'. Must be one of: ${validQueenTypes.join(', ')}`));
+    console.error(
+      chalk.red(
+        `Error: Invalid queen type '${queenType}'. Must be one of: ${validQueenTypes.join(', ')}`,
+      ),
+    );
     return;
   }
 
@@ -469,7 +473,11 @@ async function spawnSwarm(args, flags) {
   const validConsensusTypes = ['majority', 'weighted', 'byzantine'];
   const consensusAlgorithm = flags.consensus || flags.consensusAlgorithm || 'majority';
   if (!validConsensusTypes.includes(consensusAlgorithm)) {
-    console.error(chalk.red(`Error: Invalid consensus algorithm '${consensusAlgorithm}'. Must be one of: ${validConsensusTypes.join(', ')}`));
+    console.error(
+      chalk.red(
+        `Error: Invalid consensus algorithm '${consensusAlgorithm}'. Must be one of: ${validConsensusTypes.join(', ')}`,
+      ),
+    );
     return;
   }
 
@@ -485,9 +493,14 @@ async function spawnSwarm(args, flags) {
         name: flags.name || `hive-${Date.now()}`,
         queenType: flags.queenType || flags['queen-type'] || 'strategic',
         maxWorkers: parseInt(flags.maxWorkers || flags['max-workers'] || '8'),
-        topology: flag.topology || 'hierarchical'),
+        topology: flags.topology || 'hierarchical',
         consensusAlgorithm: flags.consensus || flags.consensusAlgorithm || 'majority',
-        autoScale: flags.autoScale !== undefined ? flags.autoScale : (flags['auto-scale'] !== undefined ? flags['auto-scale'] : true),
+        autoScale:
+          flags.autoScale !== undefined
+            ? flags.autoScale
+            : flags['auto-scale'] !== undefined
+              ? flags['auto-scale']
+              : true,
         namespace: flags.namespace || 'default',
         encryption: flags.encryption || false,
       });
@@ -778,11 +791,11 @@ async function spawnSwarm(args, flags) {
       isExiting = true;
 
       console.log('\n\n' + chalk.yellow('⏸️  Pausing session...'));
-      
+
       try {
         // Save current checkpoint using the existing session manager
         // const sessionManager = new HiveMindSessionManager(); // Use existing one
-        
+
         // Create checkpoint data
         const checkpointData = {
           timestamp: new Date().toISOString(),
@@ -793,26 +806,26 @@ async function spawnSwarm(args, flags) {
           status: 'paused_by_user',
           reason: 'User pressed Ctrl+C',
         };
-        
+
         // Save checkpoint
         await sessionManager.saveCheckpoint(sessionId, 'auto-pause', checkpointData);
-        
+
         // Pause the session
         await sessionManager.pauseSession(sessionId);
-        
+
         // Close session manager
         sessionManager.close();
-        
+
         console.log(chalk.green('✓') + ' Session paused successfully');
         console.log(chalk.cyan('\nTo resume this session, run:'));
         console.log(chalk.bold(`  claude-flow hive-mind resume ${sessionId}`));
         console.log();
-        
+
         // Clean up auto-save if active
         if (global.autoSaveInterval) {
           clearInterval(global.autoSaveInterval);
         }
-        
+
         process.exit(0);
       } catch (error) {
         console.error(chalk.red('Error pausing session:'), error.message);
@@ -1883,7 +1896,7 @@ async function getActiveSessionId(swarmId) {
   const sessionManager = new HiveMindSessionManager();
   try {
     const sessions = await sessionManager.getActiveSessions();
-    const activeSession = sessions.find(s => s.swarm_id === swarmId && s.status === 'active');
+    const activeSession = sessions.find((s) => s.swarm_id === swarmId && s.status === 'active');
     return activeSession ? activeSession.id : null;
   } finally {
     sessionManager.close();
@@ -1984,7 +1997,7 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
           isExiting = true;
 
           console.log('\n\n' + chalk.yellow('⏸️  Pausing session and terminating Claude Code...'));
-          
+
           try {
             // Terminate Claude Code process
             if (claudeProcess && !claudeProcess.killed) {
@@ -2001,15 +2014,15 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
                 reason: 'User pressed Ctrl+C during Claude Code execution',
                 claudePid: claudeProcess.pid,
               };
-              
+
               await sessionManager.saveCheckpoint(sessionId, 'auto-pause-claude', checkpointData);
               await sessionManager.pauseSession(sessionId);
-              
+
               console.log(chalk.green('✓') + ' Session paused successfully');
               console.log(chalk.cyan('\nTo resume this session, run:'));
               console.log(chalk.bold(`  claude-flow hive-mind resume ${sessionId}`));
             }
-            
+
             sessionManager.close();
             process.exit(0);
           } catch (error) {
@@ -2786,7 +2799,7 @@ async function launchClaudeWithContext(prompt, flags) {
         } else if (code !== null) {
           console.log(chalk.red(`\n✗ Claude Code exited with code ${code}`));
         }
-        
+
         // Clean up signal handlers
         process.removeListener('SIGINT', sigintHandler);
         process.removeListener('SIGTERM', sigintHandler);
