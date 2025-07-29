@@ -23,6 +23,7 @@ import {
   nonInteractiveProgress,
   nonInteractiveSelect,
 } from '../utils/safe-interactive.js';
+import { parseFlags, normalizeFlags, applySmartDefaults, validateFlags } from '../utils.js';
 
 // Import SQLite for persistence
 import Database from 'better-sqlite3';
@@ -300,16 +301,26 @@ const hiveMindWizard = safeInteractive(
     console.log(chalk.gray('Use command-line flags to customize:'));
     console.log(chalk.gray('  --objective "Your task"    Set swarm objective'));
     console.log(chalk.gray('  --queen-type strategic     Set queen type'));
+    console.log(chalk.gray('  --topology mesh            Set topology'));
     console.log(chalk.gray('  --max-workers 8            Set worker count'));
     console.log();
 
     const objective = flags.objective || 'General task coordination';
+
+    // Enhanced flag handling - prefer user-provided values
+    const getFlag = (camelCase, kebabCase, defaultValue) => {
+      if (flags[kebabCase] !== undefined) return flags[kebabCase];
+      if (flags[camelCase] !== undefined) return flags[camelCase];
+      return defaultValue;
+    };
+    
     const config = {
       name: flags.name || `swarm-${Date.now()}`,
-      queenType: flags.queenType || flags['queen-type'] || 'strategic',
-      maxWorkers: parseInt(flags.maxWorkers || flags['max-workers'] || '8'),
+      queenType: getFlag('queenType', 'queen-type', 'strategic'),
+      topology: getFlag('topology', 'topology', 'hierarchical'),
+      maxWorkers: parseInt(getFlag('maxWorkers', 'max-workers', '8')),
       consensusAlgorithm: flags.consensus || flags.consensusAlgorithm || 'majority',
-      autoScale: flags.autoScale || flags['auto-scale'] || false,
+      autoScale: getFlag('autoScale', 'auto-scale', false),
       namespace: flags.namespace || 'default',
       verbose: flags.verbose || false,
       encryption: flags.encryption || false,
@@ -319,6 +330,7 @@ const hiveMindWizard = safeInteractive(
       ...flags,
       name: config.name,
       queenType: config.queenType,
+      topology: config.topology,
       maxWorkers: config.maxWorkers,
       consensusAlgorithm: config.consensusAlgorithm,
       autoScale: config.autoScale,
@@ -473,6 +485,7 @@ async function spawnSwarm(args, flags) {
         name: flags.name || `hive-${Date.now()}`,
         queenType: flags.queenType || flags['queen-type'] || 'strategic',
         maxWorkers: parseInt(flags.maxWorkers || flags['max-workers'] || '8'),
+        topology: flag.topology || 'hierarchical'),
         consensusAlgorithm: flags.consensus || flags.consensusAlgorithm || 'majority',
         autoScale: flags.autoScale !== undefined ? flags.autoScale : (flags['auto-scale'] !== undefined ? flags['auto-scale'] : true),
         namespace: flags.namespace || 'default',
@@ -1906,6 +1919,7 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
     console.log(chalk.cyan('Swarm ID:'), swarmId);
     console.log(chalk.cyan('Objective:'), objective);
     console.log(chalk.cyan('Queen Type:'), flags.queenType || 'strategic');
+    console.log(chalk.cyan('Topology:'), flags.topology || 'hierarchical');
     console.log(chalk.cyan('Worker Count:'), workers.length);
     console.log(chalk.cyan('Worker Types:'), Object.keys(workerGroups).join(', '));
     console.log(chalk.cyan('Consensus Algorithm:'), flags.consensus || 'majority');
